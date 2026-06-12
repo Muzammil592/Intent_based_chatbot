@@ -1,0 +1,34 @@
+{
+  "intents": [
+    {
+      "tag": "greet",
+      "patterns": ["hello", "hi", "hey there", "good morning", "is anyone there", "salam"],
+      "responses": ["Hello! How can I assist you today?", "Hi there! What can I do for you?", "Hey! Ready to help."]
+    },
+    {
+      "tag": "farewell",
+      "patterns": ["bye", "see you later", "goodbye", "i am leaving", "take care"],
+      "responses": ["Goodbye! Have a great day ahead.", "See you later! Stay safe.", "Bye! Come back soon."]
+    },
+    {
+      "tag": "schedule",
+      "patterns": ["what is my schedule", "check my calendar", "do i have meetings today", "show my timeline", "agenda"],
+      "responses": ["Accessing secure calendar database... You have a code sync at 10 AM and an architecture review at 3 PM."]
+    },
+    {
+      "tag": "weather",
+      "patterns": ["what is the weather like", "is it raining", "weather forecast", "temperature outside", "climate update"],
+      "responses": ["Fetching real-time meteorological metrics... The current tracking index shows 32°C and clear skies."]
+    },
+    {
+      "tag": "reminder",
+      "patterns": ["set a reminder", "remind me to write code", "alarm settings", "can you remind me"],
+      "responses": ["Reminder logged successfully in local cron state."]
+    },
+    {
+      "tag": "small_talk",
+      "patterns": ["how are you", "are you a human", "who made you", "what is your name", "tell me a joke"],
+      "responses": ["I am a localized intent processing matrix initialized by Muzammil. Operating at 100% efficiency."]
+    }
+  ]
+}
