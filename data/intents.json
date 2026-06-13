@@ -2,32 +2,54 @@
   "intents": [
     {
       "tag": "greet",
-      "patterns": ["hello", "hi", "hey there", "good morning", "is anyone there", "salam"],
+      "patterns": [
+        "hello", "hi", "hey there", "good morning", "good afternoon", "is anyone there", 
+        "salam", "aoa", "hey", "hi friend", "hello assistant", "good evening", "howdy", "asalam o alaikum"
+      ],
       "responses": ["Hello! How can I assist you today?", "Hi there! What can I do for you?", "Hey! Ready to help."]
     },
     {
       "tag": "farewell",
-      "patterns": ["bye", "see you later", "goodbye", "i am leaving", "take care"],
+      "patterns": [
+        "bye", "see you later", "goodbye", "i am leaving", "take care", "gotta go", 
+        "catch you later", "exit", "quit", "talk to you later", "bye bye", "im out"
+      ],
       "responses": ["Goodbye! Have a great day ahead.", "See you later! Stay safe.", "Bye! Come back soon."]
     },
     {
       "tag": "schedule",
-      "patterns": ["what is my schedule", "check my calendar", "do i have meetings today", "show my timeline", "agenda"],
+      "patterns": [
+        "what is my schedule", "check my calendar", "do i have meetings today", "show my timeline", 
+        "agenda for today", "what am i doing today", "list my tasks for tomorrow", "any appointments",
+        "show my agenda", "view my schedule", "calendar update", "what is planned for today"
+      ],
       "responses": ["Accessing secure calendar database... You have a code sync at 10 AM and an architecture review at 3 PM."]
     },
     {
       "tag": "weather",
-      "patterns": ["what is the weather like", "is it raining", "weather forecast", "temperature outside", "climate update"],
+      "patterns": [
+        "what is the weather like", "is it raining", "weather forecast", "temperature outside", 
+        "climate update", "is it hot today", "forecast for lahore", "how is the weather", 
+        "tell me the temperature", "will it snow", "weather update", "is it sunny out"
+      ],
       "responses": ["Fetching real-time meteorological metrics... The current tracking index shows 32°C and clear skies."]
     },
     {
       "tag": "reminder",
-      "patterns": ["set a reminder", "remind me to write code", "alarm settings", "can you remind me"],
+      "patterns": [
+        "set a reminder", "remind me to write code", "alarm settings", "can you remind me", 
+        "create a notification", "remind me at 5pm", "wake me up at 7am", "set reminder for 10pm",
+        "i need a reminder at 3pm", "remind me to call team", "schedule alert for 11am", "alert me at 4pm"
+      ],
       "responses": ["Reminder logged successfully in local cron state."]
     },
     {
       "tag": "small_talk",
-      "patterns": ["how are you", "are you a human", "who made you", "what is your name", "tell me a joke"],
+      "patterns": [
+        "how are you", "are you a human", "who made you", "what is your name", "tell me a joke",
+        "are you a robot", "what can you do", "who is your developer", "talk to me", "how do you work",
+        "you are smart", "tell me something interesting"
+      ],
       "responses": ["I am a localized intent processing matrix initialized by Muzammil. Operating at 100% efficiency."]
     }
   ]
