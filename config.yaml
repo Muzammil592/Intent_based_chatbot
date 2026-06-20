@@ -1,0 +1,15 @@
+system:
+  environment: "production"
+  artifacts_dir: "/tmp/artifacts"
+  log_level: "INFO"
+
+model:
+  confidence_threshold: 0.45
+  ngram_range: [1, 2]
+  max_features: 1000
+  logistic_regression_c: 5.0
+
+api:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false

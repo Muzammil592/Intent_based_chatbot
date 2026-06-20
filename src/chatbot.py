@@ -1,85 +1,104 @@
 import os
 import random
-import pickle
-import sys
+import yaml
+import logging
+import joblib
 import re
+from flask import Flask, request, jsonify
 
-class SessionContext:
-    """Tracks conversation history states across turns."""
-    def __init__(self):
-        self.last_intent = None
-        self.extracted_entities = {}
+# Initialize Core Microservice Components
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s] - %(message)s')
+logger = logging.getLogger(__name__)
 
-    def reset(self):
-        self.last_intent = None
-        self.extracted_entities = {}
+app = Flask(__name__)
 
-def extract_entities(text: str) -> dict:
-    """Pure regex entity extraction matrix for locations and times."""
-    entities = {}
+# Load Immutable Architecture Config Targets
+with open("config.yaml", 'r') as f:
+    config = yaml.safe_load(f)
     
-    # 1. Look for time parameters (e.g., 5pm, 10:30 am, 7am)
-    time_match = re.search(r'\b(\d{1,2}(?::\d{2})?\s*(?:am|pm|am|pm))\b', text, re.IGNORECASE)
+ARTIFACTS_DIR = config['system']['artifacts_dir']
+THRESHOLD = config['model']['confidence_threshold']
+
+# Volatile In-Memory Session Storage Context Matrix
+session_context = {"last_intent": None, "extracted_entities": {}}
+
+try:
+    preprocessor = joblib.load(f"{ARTIFACTS_DIR}/preprocessor.joblib")
+    model = joblib.load(f"{ARTIFACTS_DIR}/model.joblib")
+    responses = joblib.load(f"{ARTIFACTS_DIR}/responses.joblib")
+    logger.info("Production compiled weights securely mounted into memory layers.")
+except FileNotFoundError:
+    logger.warning("Artifact matrices missing from disk. Launching emergency fallback compilation.")
+    import train
+    train.execute_production_train()
+    preprocessor = joblib.load(f"{ARTIFACTS_DIR}/preprocessor.joblib")
+    model = joblib.load(f"{ARTIFACTS_DIR}/model.joblib")
+    responses = joblib.load(f"{ARTIFACTS_DIR}/responses.joblib")
+
+def run_entity_extraction(text: str) -> dict:
+    entities = {}
+    time_match = re.search(r'\b(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b', text, re.IGNORECASE)
     if time_match:
-        entities['time'] = time_match.group(1)
-        
-    # 2. Look for explicit typical Pakistani cities/locations as target parameters
-    location_match = re.search(r'\b(lahore|karachi|islamabad|uet|hostel|office|home)\b', text, re.IGNORECASE)
+        entities['time'] = time_match.group(1).lower()
+    location_match = re.search(r'\b(lahore|karachi|islamabad|uet|office|home)\b', text, re.IGNORECASE)
     if location_match:
         entities['location'] = location_match.group(1).capitalize()
-        
     return entities
 
-def live_chat_loop():
-    print("\n--- Day 2: Advanced NLP Intent & Entity Engine ---")
-    
+@app.route('/chat', methods=['POST'])
+def process_chat_intent():
     try:
-        with open('/tmp/artifacts/preprocessor.pkl', 'rb') as f: preprocessor = pickle.load(f)
-        with open('/tmp/artifacts/model.pkl', 'rb') as f: model = pickle.load(f)
-        with open('/tmp/artifacts/responses.pkl', 'rb') as f: responses = pickle.load(f)
-    except FileNotFoundError:
-        print("[CRITICAL] Trained model assets missing! Build Docker image or run train.py.")
-        sys.exit(1)
+        data = request.get_json()
+        
+        # Guardrail Input Layer: Request Field Validation
+        if not data or 'message' not in data:
+            logger.warning("API endpoint received an invalid, parameterless input block.")
+            return jsonify({"error": "Malformed payload mapping. 'message' string element required."}), 400
 
-    context = SessionContext()
-    print("Engine Status: ACTIVE. Threshold set to 0.45. Context memory tracking initialized.\n")
-    
-    while True:
-        user_input = input("You: ")
-        if user_input.lower().strip() == 'exit':
-            break
-            
-        if not user_input.strip():
-            continue
+        raw_message = str(data['message']).strip()
+        
+        # Guardrail Input Layer: Input Sanitization 
+        if not raw_message or len(raw_message) > 500:
+            return jsonify({"error": "Message structure failed sizing constraints (1-500 chars)."}), 400
 
-        # Extract entities straight from raw input string before text processing clears it
-        found_entities = extract_entities(user_input)
-        context.extracted_entities.update(found_entities)
+        # Perform Processing Actions
+        found_entities = run_entity_extraction(raw_message)
+        session_context['extracted_entities'].update(found_entities)
 
-        # Vector space classification
-        query_vec = preprocessor.transform_query(user_input)
+        query_vec = preprocessor.transform_query(raw_message)
         tag, confidence = model.predict_intent(query_vec)
 
-        # UPGRADED: Day 2 strict confidence threshold handling
-        if confidence < 0.45:
-            print(f"Bot: [Confidence Matrix Low ({confidence:.2f})] I am not certain about your intent. Could you rephrase?")
-            context.last_intent = "unknown"
-            continue
+        # Handle Confidence Fallback Constraints
+        if confidence < THRESHOLD:
+            logger.info(f"Query dropped to fallback. Intent: {tag} returned inadequate confidence score: {confidence:.2f}")
+            return jsonify({
+                "intent": "unknown",
+                "confidence": float(confidence),
+                "entities": session_context['extracted_entities'],
+                "response": "I am unable to clearly verify your request parameter intent. Please restructure your wording."
+            }), 200
 
-        # Process contextual entity injection overrides
-        if tag == "reminder" and 'time' in context.extracted_entities:
-            reply = f"Understood. I have logged an automatic system alert for you exactly at {context.extracted_entities['time']}."
-        elif tag == "weather" and 'location' in context.extracted_entities:
-            reply = f"Checking real-time atmospheric updates for {context.extracted_entities['location']}... It is currently sunny and clear."
-        elif tag == "schedule" and context.last_intent == "greet":
-            reply = "Great to see you again! Checking your timeline records... You have a design review setup today."
+        # Process Response Injection Overrides
+        if tag == "reminder" and 'time' in session_context['extracted_entities']:
+            reply = f"Understood. I have logged an automatic system alert for you exactly at {session_context['extracted_entities']['time']}."
+        elif tag == "weather" and 'location' in session_context['extracted_entities']:
+            reply = f"Checking real-time atmospheric updates for {session_context['extracted_entities']['location']}... Sunny skies detected."
         else:
             reply = random.choice(responses[tag])
 
-        # Track contextual conversation memory
-        context.last_intent = tag
-        
-        print(f"Bot (Intent: {tag} | Conf: {confidence:.2f} | Entities: {context.extracted_entities}): {reply}")
+        session_context['last_intent'] = tag
+        logger.info(f"Successfully processed response. Intent Match: '{tag}' (Conf: {confidence:.2f})")
+
+        return jsonify({
+            "intent": tag,
+            "confidence": float(confidence),
+            "entities": session_context['extracted_entities'],
+            "response": reply
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Critical runtime exception encountered during inference mapping: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal System Error occurred inside the NLP engine."}), 500
 
 if __name__ == "__main__":
-    live_chat_loop()
+    app.run(host=config['api']['host'], port=config['api']['port'], debug=config['api']['debug'])

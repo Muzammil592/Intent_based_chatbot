@@ -1,29 +1,28 @@
 import re
+import yaml
 import nltk
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from spellchecker import SpellChecker
 
-nltk.download('punkt', quiet=True)
-nltk.download('wordnet', quiet=True)
-
 class AdvancedPreprocessor:
-    def __init__(self):
+    def __init__(self, config_path="config.yaml"):
+        with open(config_path, 'r') as f:
+            self.config = yaml.safe_load(f)['model']
+            
         self.lemmatizer = WordNetLemmatizer()
         self.spell = SpellChecker()
         self.stopwords = {'is', 'the', 'a', 'an', 'are', 'am', 'to', 'at', 'in', 'on', 'for', 'of', 'do', 'does'}
         
-# Optimized Day 2 Tuning Matrix
         self.vectorizer = TfidfVectorizer(
-            ngram_range=(1, 2), 
-            max_features=1000,
-            sublinear_tf=True,  # Scaling down logarithmic term frequencies to prevent skewing
-            min_df=1            # Ensure single words are captured completely
+            ngram_range=tuple(self.config['ngram_range']), 
+            max_features=self.config['max_features'],
+            sublinear_tf=True,
+            min_df=1
         )
-        # Standard contraction mapping matrix
         self.contractions = {
             "i'm": "i am", "can't": "cannot", "don't": "do not", "what's": "what is",
-            "you're": "you are", "it's": "it is", "she's": "she is", "he's": "he is"
+            "you're": "you are", "it's": "it is"
         }
 
     def expand_contractions(self, text: str) -> str:
@@ -32,24 +31,20 @@ class AdvancedPreprocessor:
         return text
 
     def clean_text(self, text: str, fix_spelling: bool = False) -> str:
-        """Advanced cleaning pipe: Contractions -> Regex -> Spelling Correction -> Lemmatization"""
+        if not isinstance(text, str):
+            return ""
         text = text.lower().strip()
         text = self.expand_contractions(text)
-        text = re.sub(r'[^\w\s]', '', text) # Strip punctuation
+        text = re.sub(r'[^\w\s]', '', text)
         
         tokens = nltk.word_tokenize(text)
         processed_tokens = []
-        
         for token in tokens:
-            # Execute spelling check only on live user queries to keep training data un-warped
             if fix_spelling and token not in self.stopwords:
                 corrected = self.spell.correction(token)
                 token = corrected if corrected else token
-                
             if token not in self.stopwords:
-                lemma = self.lemmatizer.lemmatize(token)
-                processed_tokens.append(lemma)
-                
+                processed_tokens.append(self.lemmatizer.lemmatize(token))
         return " ".join(processed_tokens)
 
     def fit_transform_matrix(self, text_list: list):
